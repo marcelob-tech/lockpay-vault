@@ -1,0 +1,31 @@
+{
+  "license": "ISC",
+  "scripts": {
+    "test": "jest",
+    "test:anchor": "ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=~/.config/solana/id.json ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.spec.ts\"",
+    "ts:init": "ts-node ts/cluster1/vault_init.ts",
+    "ts:claim": "ts-node ts/cluster1/claim_vault.ts",
+    "ts:cancel": "ts-node ts/cluster1/cancel_lock_vault.ts",
+    "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/web3.js": "^1.87.6"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "mocha": "^9.0.3",
+    "ts-mocha": "^10.0.0",
+    "@types/bn.js": "^5.1.0",
+    "@types/chai": "^4.3.0",
+    "@types/jest": "^29.5.12",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^20.11.0",
+    "jest": "^29.7.0",
+    "typescript": "^5.7.3",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.1",
+    "prettier": "^2.6.2"
+  }
+}
