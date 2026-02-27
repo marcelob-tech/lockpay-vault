@@ -3,4 +3,6 @@ node_modules
 target
 .DS_Store
 coverage/*
+coverage/lcov-report/*
+coverage/index.html
 coverage/lcov.info
