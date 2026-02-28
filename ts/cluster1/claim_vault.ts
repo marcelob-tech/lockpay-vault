@@ -32,57 +32,61 @@ const deriveVault = (sender: PublicKey, receiver: PublicKey) =>
 const deriveVaultAuthority = () =>
   PublicKey.findProgramAddressSync([Buffer.from("vault_authority")], programId)[0];
 
-(async () => {
-  try {
-    const receiverArg = process.argv[2];
-    const receiverWalletPath = process.argv[3];
-    const senderArg = process.argv[4];
+export const main = async (argv: string[] = process.argv) => {
+  const receiverArg = argv[2];
+  const receiverWalletPath = argv[3];
+  const senderArg = argv[4];
 
-    const receiverKeypair = loadKeypair(receiverWalletPath) ?? defaultReceiverKeypair;
-    const provider = new AnchorProvider(connection, new Wallet(receiverKeypair), { commitment });
-    const program = new Program(IDL as any, provider);
+  const isJest = !!process.env.JEST_WORKER_ID;
 
-    const sender = senderArg ? new PublicKey(senderArg) : senderKeypair.publicKey;
-    const receiver = receiverArg ? new PublicKey(receiverArg) : receiverKeypair.publicKey;
+  const receiverKeypair = loadKeypair(receiverWalletPath) ?? defaultReceiverKeypair;
+  const provider = new AnchorProvider(connection, new Wallet(receiverKeypair), { commitment });
+  const program = new Program(IDL as any, provider);
 
-    if (receiverArg && !receiver.equals(receiverKeypair.publicKey)) {
-      throw new Error(
-        `Receiver signer mismatch: receiver arg=${receiver.toBase58()} but signer wallet=${receiverKeypair.publicKey.toBase58()}`,
-      );
-    }
+  const sender = senderArg ? new PublicKey(senderArg) : senderKeypair.publicKey;
+  const receiver = receiverArg ? new PublicKey(receiverArg) : receiverKeypair.publicKey;
 
-    const vault = deriveVault(sender, receiver);
-    const vaultAuthority = deriveVaultAuthority();
+  if (receiverArg && !receiver.equals(receiverKeypair.publicKey)) {
+    throw new Error(
+      `Receiver signer mismatch: receiver arg=${receiver.toBase58()} but signer wallet=${receiverKeypair.publicKey.toBase58()}`,
+    );
+  }
 
-    const vaultInfo = await connection.getAccountInfo(vault, commitment);
-    if (!vaultInfo) {
-      throw new Error(
-        `Vault PDA not initialized for sender=${sender.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}`,
-      );
-    }
-    if (!vaultInfo.owner.equals(programId)) {
-      throw new Error(
-        `Vault PDA owner is ${vaultInfo.owner.toBase58()}, expected ${programId.toBase58()}`,
-      );
-    }
+  const vault = deriveVault(sender, receiver);
+  const vaultAuthority = deriveVaultAuthority();
 
-    const signature = await program.methods
-      .claim()
-      .accounts({
-        receiver,
-        vault,
-        vaultAuthority,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([receiverKeypair])
-      .rpc();
+  const vaultInfo = await connection.getAccountInfo(vault, commitment);
+  if (!vaultInfo) {
+    throw new Error(
+      `Vault PDA not initialized for sender=${sender.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}`,
+    );
+  }
+  if (!vaultInfo.owner.equals(programId)) {
+    throw new Error(`Vault PDA owner is ${vaultInfo.owner.toBase58()}, expected ${programId.toBase58()}`);
+  }
 
+  const signature = await program.methods
+    .claim()
+    .accounts({
+      receiver,
+      vault,
+      vaultAuthority,
+      systemProgram: SystemProgram.programId,
+    })
+    .signers([receiverKeypair])
+    .rpc();
+
+  if (!isJest) {
     console.log(`Claim success! https://explorer.solana.com/tx/${signature}?cluster=devnet`);
     console.log(`sender:   ${sender.toBase58()}`);
     console.log(`receiver: ${receiver.toBase58()}`);
     console.log(`vault:    ${vault.toBase58()}`);
     console.log(`vaultAuthority: ${vaultAuthority.toBase58()}`);
-  } catch (e) {
-    console.error(`Oops, something went wrong: ${e}`);
   }
-})();
+};
+
+if (process.env.JEST_WORKER_ID) {
+  main().catch((e) => {
+    console.error(`Oops, something went wrong: ${e}`);
+  });
+}

@@ -32,61 +32,65 @@ const deriveVault = (sender: PublicKey, receiver: PublicKey) =>
 const deriveVaultAuthority = () =>
   PublicKey.findProgramAddressSync([Buffer.from("vault_authority")], programId)[0];
 
-(async () => {
-  try {
-    const senderArg = process.argv[2];
-    const senderWalletPath = process.argv[3];
-    const receiverArg = process.argv[4];
+export const main = async (argv: string[] = process.argv) => {
+  const senderArg = argv[2];
+  const senderWalletPath = argv[3];
+  const receiverArg = argv[4];
 
-    if (!senderArg) {
-      throw new Error("Usage: yarn ts:cancel <SENDER_PUBKEY> [SENDER_WALLET_JSON_PATH] [RECEIVER_PUBKEY]");
-    }
+  const isJest = !!process.env.JEST_WORKER_ID;
 
-    const keypair = loadKeypair(senderWalletPath);
-    const provider = new AnchorProvider(connection, new Wallet(keypair), { commitment });
-    const program = new Program(IDL as any, provider);
+  if (!senderArg) {
+    throw new Error("Usage: yarn ts:cancel <SENDER_PUBKEY> [SENDER_WALLET_JSON_PATH] [RECEIVER_PUBKEY]");
+  }
 
-    const sender = new PublicKey(senderArg);
-    const receiver = receiverArg ? new PublicKey(receiverArg) : defaultReceiverPubkey;
+  const keypair = loadKeypair(senderWalletPath);
+  const provider = new AnchorProvider(connection, new Wallet(keypair), { commitment });
+  const program = new Program(IDL as any, provider);
 
-    if (!sender.equals(keypair.publicKey)) {
-      throw new Error(
-        `Sender signer mismatch: sender arg=${sender.toBase58()} but signer wallet=${keypair.publicKey.toBase58()}`,
-      );
-    }
+  const sender = new PublicKey(senderArg);
+  const receiver = receiverArg ? new PublicKey(receiverArg) : defaultReceiverPubkey;
 
-    const vault = deriveVault(sender, receiver);
-    const vaultAuthority = deriveVaultAuthority();
+  if (!sender.equals(keypair.publicKey)) {
+    throw new Error(
+      `Sender signer mismatch: sender arg=${sender.toBase58()} but signer wallet=${keypair.publicKey.toBase58()}`,
+    );
+  }
 
-    const vaultInfo = await connection.getAccountInfo(vault, commitment);
-    if (!vaultInfo) {
-      throw new Error(
-        `Vault PDA not initialized for sender=${sender.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}`,
-      );
-    }
-    if (!vaultInfo.owner.equals(programId)) {
-      throw new Error(
-        `Vault PDA owner is ${vaultInfo.owner.toBase58()}, expected ${programId.toBase58()}`,
-      );
-    }
+  const vault = deriveVault(sender, receiver);
+  const vaultAuthority = deriveVaultAuthority();
 
-    const signature = await program.methods
-      .cancel()
-      .accounts({
-        sender,
-        vault,
-        vaultAuthority,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([keypair])
-      .rpc();
+  const vaultInfo = await connection.getAccountInfo(vault, commitment);
+  if (!vaultInfo) {
+    throw new Error(
+      `Vault PDA not initialized for sender=${sender.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}`,
+    );
+  }
+  if (!vaultInfo.owner.equals(programId)) {
+    throw new Error(`Vault PDA owner is ${vaultInfo.owner.toBase58()}, expected ${programId.toBase58()}`);
+  }
 
+  const signature = await program.methods
+    .cancel()
+    .accounts({
+      sender,
+      vault,
+      vaultAuthority,
+      systemProgram: SystemProgram.programId,
+    })
+    .signers([keypair])
+    .rpc();
+
+  if (!isJest) {
     console.log(`Cancel success! https://explorer.solana.com/tx/${signature}?cluster=devnet`);
     console.log(`sender:   ${sender.toBase58()}`);
     console.log(`receiver: ${receiver.toBase58()}`);
     console.log(`vault:    ${vault.toBase58()}`);
     console.log(`vaultAuthority: ${vaultAuthority.toBase58()}`);
-  } catch (e) {
-    console.error(`Oops, something went wrong: ${e}`);
   }
-})();
+};
+
+if (process.env.JEST_WORKER_ID) {
+  main().catch((e) => {
+    console.error(`Oops, something went wrong: ${e}`);
+  });
+}

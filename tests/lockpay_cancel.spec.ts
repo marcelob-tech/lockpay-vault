@@ -589,4 +589,86 @@ describe("lockpay_cancel.ts", () => {
     errSpy.mockRestore();
     process.argv = argvBak;
   });
+
+  it("covers success logs when not running under Jest", async () => {
+    jest.resetModules();
+
+    const rpcMock = jest.fn(async () => "sig");
+    const signersMock = jest.fn(() => ({ rpc: rpcMock }));
+    const accountsMock = jest.fn(() => ({ signers: signersMock }));
+    const cancelMock = jest.fn(() => ({ accounts: accountsMock }));
+    const methods = { cancel: cancelMock };
+
+    jest.doMock("@solana/web3.js", () => {
+      class PublicKey {
+        _v: string;
+        constructor(v: string) {
+          this._v = v;
+        }
+        toBase58() {
+          return this._v;
+        }
+        toBuffer() {
+          return Buffer.from(this._v);
+        }
+        equals(other: any) {
+          return other && other.toBase58 && other.toBase58() === this._v;
+        }
+        static findProgramAddressSync() {
+          return [new (this as any)("VAULT_PDA"), 255];
+        }
+      }
+
+      return {
+        Commitment: {} as any,
+        Connection: function () {
+          return {
+            getAccountInfo: jest.fn(async () => ({ owner: { equals: () => true, toBase58: () => "OWNER" } })),
+          };
+        },
+        Keypair: {
+          fromSecretKey: () => ({ publicKey: new (PublicKey as any)("SENDER") }),
+        },
+        PublicKey,
+        SystemProgram: { programId: { toBase58: () => "11111111111111111111111111111111" } },
+      };
+    });
+
+    jest.doMock("@coral-xyz/anchor", () => {
+      return {
+        AnchorProvider: class {
+          constructor() {}
+        },
+        Wallet: class {
+          constructor() {}
+        },
+        Program: class {
+          methods = methods;
+          constructor() {}
+        },
+      };
+    });
+
+    jest.doMock("../../turbin3-wallet.json", () => [1, 2, 3], { virtual: true });
+    jest.doMock("../../receiver-wallet.json", () => [4, 5, 6], { virtual: true });
+    jest.doMock("../../../target/idl/lockpay_vault.json", () => ({ address: "6Ywvmc" }), { virtual: true });
+
+    const jestBak = process.env.JEST_WORKER_ID;
+    delete process.env.JEST_WORKER_ID;
+
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => undefined);
+    const errSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const { main } = require("../ts/cluster1/cancel_lock_vault");
+    await main(["node", "cancel_lock_vault.ts", "SENDER"]);
+
+    expect(rpcMock.mock.calls.length).to.eq(1);
+    expect(errSpy.mock.calls.length).to.eq(0);
+    expect(logSpy.mock.calls.length).to.be.greaterThan(0);
+
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+
+    if (jestBak) process.env.JEST_WORKER_ID = jestBak;
+  });
 });

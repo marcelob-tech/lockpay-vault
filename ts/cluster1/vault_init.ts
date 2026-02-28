@@ -51,54 +51,60 @@ const parseReceiverArg = (receiverArg?: string) => {
   return new PublicKey(receiverArg);
 };
 
-(async () => {
-  try {
-    const receiverArg = process.argv[2];
-    const amountArg = process.argv[3];
-    const senderWalletPath = process.argv[4];
+export const main = async (argv: string[] = process.argv) => {
+  const receiverArg = argv[2];
+  const amountArg = argv[3];
+  const senderWalletPath = argv[4];
 
-    const senderKeypair = loadKeypair(senderWalletPath);
-    const provider = new AnchorProvider(connection, new Wallet(senderKeypair), { commitment });
-    const program = new Program(IDL as any, provider);
+  const isJest = !!process.env.JEST_WORKER_ID;
 
-    const receiver = parseReceiverArg(receiverArg);
-    const amountLamports = amountArg ? BigInt(amountArg) : 30_000_000n;
+  const senderKeypair = loadKeypair(senderWalletPath);
+  const provider = new AnchorProvider(connection, new Wallet(senderKeypair), { commitment });
+  const program = new Program(IDL as any, provider);
 
-    const vault = deriveVault(senderKeypair.publicKey, receiver);
-    const vaultAuthority = deriveVaultAuthority();
+  const receiver = parseReceiverArg(receiverArg);
+  const amountLamports = amountArg ? BigInt(amountArg) : 30_000_000n;
 
-    const existing = await connection.getAccountInfo(vault, commitment);
-    if (existing) {
-      const owner = existing.owner.toBase58();
-      const expected = programId.toBase58();
-      if (existing.owner.equals(programId)) {
-        throw new Error(
-          `Vault PDA already initialized for sender=${senderKeypair.publicKey.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}. Use yarn ts:claim <receiver> [receiver_wallet.json] [sender] or yarn ts:cancel <sender> [sender_wallet.json] [receiver].`,
-        );
-      }
+  const vault = deriveVault(senderKeypair.publicKey, receiver);
+  const vaultAuthority = deriveVaultAuthority();
+
+  const existing = await connection.getAccountInfo(vault, commitment);
+  if (existing) {
+    const owner = existing.owner.toBase58();
+    const expected = programId.toBase58();
+    if (existing.owner.equals(programId)) {
       throw new Error(
-        `Vault PDA address is already in use by owner=${owner} (expected ${expected}). sender=${senderKeypair.publicKey.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}`,
+        `Vault PDA already initialized for sender=${senderKeypair.publicKey.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}. Use yarn ts:claim <receiver> [receiver_wallet.json] [sender] or yarn ts:cancel <sender> [sender_wallet.json] [receiver].`,
       );
     }
+    throw new Error(
+      `Vault PDA address is already in use by owner=${owner} (expected ${expected}). sender=${senderKeypair.publicKey.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}`,
+    );
+  }
 
-    const signature = await program.methods
-      .initializeVault(receiver, new BN(amountLamports.toString()))
-      .accounts({
-        sender: senderKeypair.publicKey,
-        receiver,
-        vault,
-        vaultAuthority,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([senderKeypair])
-      .rpc();
+  const signature = await program.methods
+    .initializeVault(receiver, new BN(amountLamports.toString()))
+    .accounts({
+      sender: senderKeypair.publicKey,
+      receiver,
+      vault,
+      vaultAuthority,
+      systemProgram: SystemProgram.programId,
+    })
+    .signers([senderKeypair])
+    .rpc();
 
+  if (!isJest) {
     console.log(`Init success! https://explorer.solana.com/tx/${signature}?cluster=devnet`);
     console.log(`sender:   ${senderKeypair.publicKey.toBase58()}`);
     console.log(`receiver: ${receiver.toBase58()}`);
     console.log(`vault:    ${vault.toBase58()}`);
     console.log(`vaultAuthority: ${vaultAuthority.toBase58()}`);
-  } catch (e) {
-    console.error(`Oops, something went wrong: ${e}`);
   }
-})();
+};
+
+if (process.env.JEST_WORKER_ID) {
+  main().catch((e) => {
+    console.error(`Oops, something went wrong: ${e}`);
+  });
+}

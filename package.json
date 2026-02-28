@@ -3,9 +3,10 @@
   "scripts": {
     "test": "jest",
     "test:anchor": "ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=~/.config/solana/id.json ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.spec.ts\"",
-    "ts:init": "ts-node ts/cluster1/vault_init.ts",
-    "ts:claim": "ts-node ts/cluster1/claim_vault.ts",
-    "ts:cancel": "ts-node ts/cluster1/cancel_lock_vault.ts",
+    "ts:init": "ts-node -e \"require('./ts/cluster1/vault_init').main(process.argv)\"",
+    "ts:claim": "ts-node -e \"require('./ts/cluster1/claim_vault').main(process.argv)\"",
+    "ts:cancel": "ts-node -e \"require('./ts/cluster1/cancel_lock_vault').main(process.argv)\"",
+    "ts:workflow": "ts-node ts/cluster1/vault_workflow.ts",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
   },

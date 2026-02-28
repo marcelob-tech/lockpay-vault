@@ -131,7 +131,9 @@ Tests are split into two categories:
 
 📸 Screenshot of passing tests:
 
-(Insert screenshot here)
+![Passing tests](../screenshot/image1.png)
+
+![Coverage report](../screenshot/image2.png)
 
 ---
 
@@ -183,18 +185,16 @@ programs/
   lockpay_vault/
     src/lib.rs
 
-cluster1/
-  lockpay_initialize_vault.ts
-  lockpay_claim.ts
-  lockpay_cancel.ts
+ts/cluster1/
+  vault_init.ts
+  claim_vault.ts
+  cancel_lock_vault.ts
+  vault_workflow.ts
 
-client-tests/
+tests/
   lockpay_initialize_vault.spec.ts
   lockpay_claim.spec.ts
   lockpay_cancel.spec.ts
-
-tests/
-  lockpay_vault.spec.ts
 
 docs/
   PLANNING.md
