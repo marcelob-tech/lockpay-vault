@@ -217,27 +217,4 @@ docs/
 
 ---
 
-# 🧩 Future Improvements
-
-- SPL token escrow support
-- Expiration timestamp
-- Time-lock option
-- Multi-recipient escrow
-- Fee mechanism
-- Upgradeable program support
-
----
-
-# 🏁 Submission Requirements
-
-- Anchor framework used
-- Unique constraint implemented
-- At least one additional PDA
-- Full test coverage
-- Devnet deployment
-- Screenshot of passing tests
-- Devnet Program ID included
-
----
-
 Built with Anchor ⚓
