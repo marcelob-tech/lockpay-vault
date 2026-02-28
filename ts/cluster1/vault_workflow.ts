@@ -1,4 +1,5 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
+import { spawnSync } from "child_process";
 import path from "path";
 
 import senderWallet from "../../turbin3-wallet.json";
@@ -106,6 +107,15 @@ const runStep = async (label: string, expectedError: boolean, fn: () => Promise<
   });
 
   console.log(`\nWorkflow finished`);
+
+  console.log(`\nRunning unit tests: npm run test`);
+  const testResult = spawnSync("npm", ["run", "test"], {
+    stdio: "inherit",
+  });
+
+  if (testResult.status !== 0) {
+    throw new Error(`Unit tests failed with exit code ${testResult.status}`);
+  }
 })().catch((e) => {
   console.error(`Workflow failed: ${e}`);
 });
