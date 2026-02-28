@@ -50,24 +50,8 @@ export const main = async (argv: string[] = process.argv) => {
   const sender = new PublicKey(senderArg);
   const receiver = receiverArg ? new PublicKey(receiverArg) : defaultReceiverPubkey;
 
-  if (!sender.equals(keypair.publicKey)) {
-    throw new Error(
-      `Sender signer mismatch: sender arg=${sender.toBase58()} but signer wallet=${keypair.publicKey.toBase58()}`,
-    );
-  }
-
   const vault = deriveVault(sender, receiver);
   const vaultAuthority = deriveVaultAuthority();
-
-  const vaultInfo = await connection.getAccountInfo(vault, commitment);
-  if (!vaultInfo) {
-    throw new Error(
-      `Vault PDA not initialized for sender=${sender.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}`,
-    );
-  }
-  if (!vaultInfo.owner.equals(programId)) {
-    throw new Error(`Vault PDA owner is ${vaultInfo.owner.toBase58()}, expected ${programId.toBase58()}`);
-  }
 
   const signature = await program.methods
     .cancel()

@@ -68,20 +68,6 @@ export const main = async (argv: string[] = process.argv) => {
   const vault = deriveVault(senderKeypair.publicKey, receiver);
   const vaultAuthority = deriveVaultAuthority();
 
-  const existing = await connection.getAccountInfo(vault, commitment);
-  if (existing) {
-    const owner = existing.owner.toBase58();
-    const expected = programId.toBase58();
-    if (existing.owner.equals(programId)) {
-      throw new Error(
-        `Vault PDA already initialized for sender=${senderKeypair.publicKey.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}. Use yarn ts:claim <receiver> [receiver_wallet.json] [sender] or yarn ts:cancel <sender> [sender_wallet.json] [receiver].`,
-      );
-    }
-    throw new Error(
-      `Vault PDA address is already in use by owner=${owner} (expected ${expected}). sender=${senderKeypair.publicKey.toBase58()} receiver=${receiver.toBase58()} vault=${vault.toBase58()}`,
-    );
-  }
-
   const signature = await program.methods
     .initializeVault(receiver, new BN(amountLamports.toString()))
     .accounts({

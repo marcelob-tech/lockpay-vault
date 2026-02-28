@@ -1,6 +1,8 @@
 pub const VAULT_SEED: &[u8] = b"vault";
 pub const VAULT_AUTHORITY_SEED: &[u8] = b"vault_authority";
 
+pub const MIN_VAULT_INIT_LAMPORTS: u64 = 20_000_000;
+
 // Mirrors Vault layout: 32 + 32 + 8 + 1 + 1
 pub const VAULT_SPACE: usize = 32 + 32 + 8 + 1 + 1;
 

@@ -4,6 +4,8 @@ use anchor_lang::prelude::*;
 pub enum LockPayError {
     #[msg("Receiver mismatch")]
     ReceiverMismatch,
+    #[msg("Amount below minimum")]
+    AmountBelowMinimum,
     #[msg("Unauthorized")]
     Unauthorized,
     #[msg("Already claimed")]

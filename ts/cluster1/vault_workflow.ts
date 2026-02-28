@@ -53,6 +53,18 @@ const runStep = async (label: string, expectedError: boolean, fn: () => Promise<
   console.log(`receiver: ${receiverPubkey.toBase58()}`);
 
   // ----------------------
+  // DEMO – EXPECTED ERRORS
+  // ----------------------
+
+  await runStep("Demo - vault_init with amount=0 (expected error)", true, async () => {
+    await vaultInit(["node", "vault_init.ts", "", "0"]);
+  });
+
+  await runStep("Demo - vault_init with amount below minimum (expected error)", true, async () => {
+    await vaultInit(["node", "vault_init.ts", "", "19999999"]);
+  });
+
+  // ----------------------
   // FLOW 1 – CLAIM WORKFLOW
   // ----------------------
 
