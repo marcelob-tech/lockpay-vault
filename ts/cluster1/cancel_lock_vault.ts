@@ -32,10 +32,24 @@ const deriveVault = (sender: PublicKey, receiver: PublicKey) =>
 const deriveVaultAuthority = () =>
   PublicKey.findProgramAddressSync([Buffer.from("vault_authority")], programId)[0];
 
+const normalizeArgs = (argv: string[]) => {
+  if (argv[2] === "-e") {
+    return argv.slice(4);
+  }
+
+  const scriptIdx = argv.findIndex((a) => a.endsWith("cancel_lock_vault.ts"));
+  if (scriptIdx !== -1) {
+    return argv.slice(scriptIdx + 1);
+  }
+
+  return argv.slice(2);
+};
+
 export const main = async (argv: string[] = process.argv) => {
-  const senderArg = argv[2];
-  const senderWalletPath = argv[3];
-  const receiverArg = argv[4];
+  const args = normalizeArgs(argv);
+  const senderArg = args[0];
+  const senderWalletPath = args[1];
+  const receiverArg = args[2];
 
   const isJest = !!process.env.JEST_WORKER_ID;
 

@@ -57,22 +57,34 @@ const runStep = async (label: string, expectedError: boolean, fn: () => Promise<
   // ----------------------
 
   await runStep("Demo - vault_init with amount=0 (expected error)", true, async () => {
-    await vaultInit(["node", "vault_init.ts", "", "0"]);
+    const demoReceiver = Keypair.generate().publicKey;
+    await vaultInit(["node", "vault_init.ts", demoReceiver.toBase58(), "0"]);
   });
 
   await runStep("Demo - vault_init with amount below minimum (expected error)", true, async () => {
-    await vaultInit(["node", "vault_init.ts", "", "19999999"]);
+    const demoReceiver = Keypair.generate().publicKey;
+    await vaultInit(["node", "vault_init.ts", demoReceiver.toBase58(), "19999999"]);
   });
 
   // ----------------------
   // FLOW 1 – CLAIM WORKFLOW
   // ----------------------
 
+  await runStep("Flow 1.0 - cleanup (cancel existing vault if present)", true, async () => {
+    await cancelVault([
+      "node",
+      "cancel_lock_vault.ts",
+      senderPubkey.toBase58(),
+      senderWalletPath,
+      receiverPubkey.toBase58(),
+    ]);
+  });
+
   await runStep("Flow 1.1 - vault_init", false, async () => {
     await vaultInit(["node", "vault_init.ts"]);
   });
 
-  await sleep(5000);
+  await sleep(3000);
 
   await runStep("Flow 1.2 - claim_vault with invalid wallet", true, async () => {
     await claimVault([
@@ -84,13 +96,13 @@ const runStep = async (label: string, expectedError: boolean, fn: () => Promise<
     ]);
   });
 
-  await sleep(5000);
+  await sleep(3000);
 
   await runStep("Flow 1.3 - claim_vault with valid wallet", false, async () => {
     await claimVault(["node", "claim_vault.ts", receiverPubkey.toBase58(), receiverWalletPath, senderPubkey.toBase58()]);
   });
 
-  await sleep(5000);
+  await sleep(3000);
 
   // ----------------------
   // FLOW 2 – CANCEL WORKFLOW
@@ -100,7 +112,7 @@ const runStep = async (label: string, expectedError: boolean, fn: () => Promise<
     await vaultInit(["node", "vault_init.ts"]);
   });
 
-  await sleep(5000);
+  await sleep(3000);
 
   await runStep("Flow 2.2 - cancel_lock_vault with invalid wallet", true, async () => {
     await cancelVault([
@@ -112,13 +124,22 @@ const runStep = async (label: string, expectedError: boolean, fn: () => Promise<
     ]);
   });
 
-  await sleep(5000);
+  await sleep(3000);
 
   await runStep("Flow 2.3 - cancel_lock_vault with valid wallet", false, async () => {
     await cancelVault(["node", "cancel_lock_vault.ts", senderPubkey.toBase58(), senderWalletPath, receiverPubkey.toBase58()]);
   });
 
   console.log(`\nWorkflow finished`);
+
+  console.log(`\nRunning integration tests: npm run test:anchor`);
+  const anchorTestResult = spawnSync("npm", ["run", "test:anchor"], {
+    stdio: "inherit",
+  });
+
+  if (anchorTestResult.status !== 0) {
+    throw new Error(`Integration tests failed with exit code ${anchorTestResult.status}`);
+  }
 
   console.log(`\nRunning unit tests: npm run test`);
   const testResult = spawnSync("npm", ["run", "test"], {

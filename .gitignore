@@ -7,3 +7,6 @@ coverage/lcov-report/index.html
 coverage/*
 coverage/lcov-report/*
 coverage/index.html
+.anchor/*
+.anchor/program-logs/*
+.anchor/program-logs

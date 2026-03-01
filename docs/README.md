@@ -72,8 +72,6 @@ Fields:
 Seeds:
 ["vault", sender, receiver]
 
----
-
 ### Vault Authority (PDA)
 
 Controls escrowed lamports.
@@ -82,6 +80,17 @@ Seeds:
 ["vault_authority"]
 
 Used to securely hold funds during escrow.
+
+## Program layout
+
+The Anchor program is organized in a modular layout:
+
+- `constants.rs` (PDA seeds, account sizing, minimum init amount)
+- `errors.rs` (Anchor `LockPayError`)
+- `state/` (account structs)
+- `contexts/` (account validation / constraints)
+- `instructions/` (handlers)
+- `utils/` (shared helpers)
 
 ---
 
@@ -93,15 +102,11 @@ Used to securely hold funds during escrow.
 - Vault state initialized
 - claimed = false
 
----
-
 ## claim
 
 - Only receiver can call
 - Transfers SOL to receiver
 - Sets claimed = true
-
----
 
 ## cancel
 
@@ -135,6 +140,14 @@ Tests are split into two categories:
 
 ![Coverage report](../screenshot/image2.png)
 
+Open the HTML coverage report:
+
+- `coverage/lcov-report/index.html`
+
+If you are on WSL and want to open it in the Windows browser:
+
+- `explorer.exe "$(wslpath -w coverage/lcov-report/index.html)"`
+
 ---
 
 # 🌐 Devnet Deployment
@@ -163,11 +176,18 @@ anchor build
 
 Run offline client tests (Jest):
 
-yarn test
+- `npm run test`
+- `yarn test`
 
 Run integration tests (Anchor / local validator):
 
-yarn test:anchor
+- `npm run test:anchor`
+- `yarn test:anchor`
+
+Run the automated workflow (devnet):
+
+- `npm run ts:workflow`
+- `yarn ts:workflow`
 
 Or run everything via Anchor:
 
@@ -183,13 +203,22 @@ anchor deploy --provider.cluster devnet
 
 programs/
   lockpay_vault/
-    src/lib.rs
+    src/
+      lib.rs
+      constants.rs
+      errors.rs
+      contexts/
+      instructions/
+      state/
+      utils/
 
 ts/cluster1/
   vault_init.ts
   claim_vault.ts
   cancel_lock_vault.ts
   vault_workflow.ts
+  programs/
+    lockpay_vault.ts
 
 tests/
   lockpay_initialize_vault.spec.ts
@@ -197,7 +226,7 @@ tests/
   lockpay_cancel.spec.ts
 
 docs/
-  PREADME.md
+  README.md
 
 ---
 
