@@ -10,3 +10,12 @@ coverage/index.html
 .anchor/*
 .anchor/program-logs/*
 .anchor/program-logs
+.vscode
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.windsurf
+.windsurf/
+.windsurf/*
+.windsurfrules
+.windsurf/workflows
